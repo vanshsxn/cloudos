@@ -6,6 +6,8 @@ import {
   Clock,
   Cloud,
   DollarSign,
+  Github,
+  Rocket,
   FileText,
   LayoutGrid,
   ListTree,
