@@ -41,12 +41,24 @@ function LoginPage() {
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    if (user) navigate({ to: "/", replace: true });
-  }, [user, navigate]);
+    if (user) navigate({ to: isAdmin ? "/admin" : "/", replace: true });
+  }, [user, isAdmin, navigate]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (busy) return;
+
+    // Built-in admin account: signs in directly, no account backend involved.
+    if (isAdminEmail(email)) {
+      if (signInAdmin(email, password)) {
+        toast.success("Admin portal unlocked.");
+        navigate({ to: "/admin", replace: true });
+      } else {
+        toast.error("Incorrect admin password.");
+      }
+      return;
+    }
+
     setBusy(true);
     try {
       if (mode === "signup") {
