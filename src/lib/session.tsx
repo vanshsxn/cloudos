@@ -25,11 +25,29 @@ export interface SessionUser {
   initials: string;
 }
 
+/** Built-in operator account. Signs in locally without the auth backend. */
+export const ADMIN_EMAIL = "sxnvansh@mv.com";
+export const ADMIN_PASSWORD = "Limca@123";
+const ADMIN_FLAG = "mvcc.admin";
+
+export const ADMIN_USER: SessionUser = {
+  id: "admin",
+  email: ADMIN_EMAIL,
+  name: "Sxnvansh (Admin)",
+  initials: "AD",
+};
+
+export function isAdminEmail(email: string) {
+  return email.trim().toLowerCase() === ADMIN_EMAIL;
+}
+
 interface SessionValue {
   user: SessionUser | null;
   session: Session | null;
   tenantId: string; // "" means all tenants
   ready: boolean;
+  isAdmin: boolean;
+  signInAdmin: (email: string, password: string) => boolean;
   signOut: () => Promise<void>;
   setTenantId: (id: string) => void;
 }
@@ -54,6 +72,14 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<SessionUser | null>(null);
   const [tenantId, setTenantIdState] = useState<string>("");
   const [ready, setReady] = useState(false);
+  const [adminMode, setAdminMode] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== "undefined" && window.localStorage.getItem(ADMIN_FLAG) === "1") {
+      setAdminMode(true);
+      setReady(true);
+    }
+  }, []);
 
   useEffect(() => {
     const { data: sub } = supabase.auth.onAuthStateChange((_event, next) => {
@@ -100,7 +126,18 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     };
   }, [session]);
 
+  const signInAdmin = useCallback((email: string, password: string) => {
+    if (!isAdminEmail(email) || password !== ADMIN_PASSWORD) return false;
+    if (typeof window !== "undefined") window.localStorage.setItem(ADMIN_FLAG, "1");
+    setAdminMode(true);
+    setTenantIdState("");
+    setReady(true);
+    return true;
+  }, []);
+
   const signOut = useCallback(async () => {
+    if (typeof window !== "undefined") window.localStorage.removeItem(ADMIN_FLAG);
+    setAdminMode(false);
     await supabase.auth.signOut();
     setSession(null);
     setUser(null);
@@ -117,9 +154,20 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     [session],
   );
 
+  const effectiveUser = adminMode ? ADMIN_USER : user;
+
   const value = useMemo(
-    () => ({ user, session, tenantId, ready, signOut, setTenantId }),
-    [user, session, tenantId, ready, signOut, setTenantId],
+    () => ({
+      user: effectiveUser,
+      session: adminMode ? null : session,
+      tenantId,
+      ready,
+      isAdmin: adminMode,
+      signInAdmin,
+      signOut,
+      setTenantId,
+    }),
+    [effectiveUser, adminMode, session, tenantId, ready, signInAdmin, signOut, setTenantId],
   );
 
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;

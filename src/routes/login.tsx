@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
-import { useSession } from "@/lib/session";
+import { isAdminEmail, useSession } from "@/lib/session";
 
 export const Route = createFileRoute("/login")({
   head: () => ({
@@ -32,7 +32,7 @@ export const Route = createFileRoute("/login")({
 });
 
 function LoginPage() {
-  const { user } = useSession();
+  const { user, isAdmin, signInAdmin } = useSession();
   const navigate = useNavigate();
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [email, setEmail] = useState("");
@@ -41,12 +41,24 @@ function LoginPage() {
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    if (user) navigate({ to: "/", replace: true });
-  }, [user, navigate]);
+    if (user) navigate({ to: isAdmin ? "/admin" : "/", replace: true });
+  }, [user, isAdmin, navigate]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (busy) return;
+
+    // Built-in admin account: signs in directly, no account backend involved.
+    if (isAdminEmail(email)) {
+      if (signInAdmin(email, password)) {
+        toast.success("Admin portal unlocked.");
+        navigate({ to: "/admin", replace: true });
+      } else {
+        toast.error("Incorrect admin password.");
+      }
+      return;
+    }
+
     setBusy(true);
     try {
       if (mode === "signup") {
