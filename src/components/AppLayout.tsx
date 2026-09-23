@@ -14,6 +14,7 @@ import {
   MonitorCog,
   PlusSquare,
   Settings,
+  ShieldCheck,
   Users,
 } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
@@ -47,7 +48,7 @@ const NAV = [
 ] as const;
 
 export function AppLayout({ title, children }: { title: string; children: ReactNode }) {
-  const { user, ready, tenantId, setTenantId, signOut } = useSession();
+  const { user, ready, isAdmin, tenantId, setTenantId, signOut } = useSession();
   const navigate = useNavigate();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const [open, setOpen] = useState(false);
@@ -83,7 +84,7 @@ export function AppLayout({ title, children }: { title: string; children: ReactN
           Main menu
         </p>
         <nav className="flex-1 space-y-1 overflow-y-auto px-3">
-          {NAV.map(({ to, label, icon: Icon }) => {
+          {(isAdmin ? [ADMIN_NAV, ...NAV] : NAV).map(({ to, label, icon: Icon }) => {
             const active = to === "/" ? pathname === "/" : pathname.startsWith(to);
             return (
               <Link
