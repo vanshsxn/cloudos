@@ -32,7 +32,7 @@ export const Route = createFileRoute("/login")({
 });
 
 function LoginPage() {
-  const { user } = useSession();
+  const { user, isAdmin, signInAdmin } = useSession();
   const navigate = useNavigate();
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [email, setEmail] = useState("");
