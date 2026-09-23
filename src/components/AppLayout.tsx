@@ -30,6 +30,8 @@ import { healthQuery } from "@/lib/engine-queries";
 import { TENANTS, useSession } from "@/lib/session";
 import { cn } from "@/lib/utils";
 
+const ADMIN_NAV = { to: "/admin", label: "Admin Portal", icon: ShieldCheck } as const;
+
 const NAV = [
   { to: "/", label: "Dashboard", icon: LayoutGrid },
   { to: "/submit", label: "Submit Job", icon: PlusSquare },
