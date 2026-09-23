@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
-import { useSession } from "@/lib/session";
+import { isAdminEmail, useSession } from "@/lib/session";
 
 export const Route = createFileRoute("/login")({
   head: () => ({
