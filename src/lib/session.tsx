@@ -25,11 +25,29 @@ export interface SessionUser {
   initials: string;
 }
 
+/** Built-in operator account. Signs in locally without the auth backend. */
+export const ADMIN_EMAIL = "sxnvansh@mv.com";
+export const ADMIN_PASSWORD = "Limca@123";
+const ADMIN_FLAG = "mvcc.admin";
+
+export const ADMIN_USER: SessionUser = {
+  id: "admin",
+  email: ADMIN_EMAIL,
+  name: "Sxnvansh (Admin)",
+  initials: "AD",
+};
+
+export function isAdminEmail(email: string) {
+  return email.trim().toLowerCase() === ADMIN_EMAIL;
+}
+
 interface SessionValue {
   user: SessionUser | null;
   session: Session | null;
   tenantId: string; // "" means all tenants
   ready: boolean;
+  isAdmin: boolean;
+  signInAdmin: (email: string, password: string) => boolean;
   signOut: () => Promise<void>;
   setTenantId: (id: string) => void;
 }
