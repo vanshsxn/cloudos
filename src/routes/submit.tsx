@@ -17,7 +17,14 @@ import {
 } from "@/components/ui/select";
 import { submitJob } from "@/lib/engine";
 import type { JobPriority } from "@/lib/engine.types";
-import { TENANTS, useSession } from "@/lib/session";
+import {
+  SIZES,
+  SUBMITTABLE_TYPES,
+  getWorkload,
+  resolveResources,
+  type WorkloadSize,
+} from "@/lib/job-types";
+import { useSession } from "@/lib/session";
 
 export const Route = createFileRoute("/submit")({
   head: () => ({
@@ -25,12 +32,14 @@ export const Route = createFileRoute("/submit")({
       { title: "Submit Job | Smart Cloud Task Engine" },
       {
         name: "description",
-        content: "Submit a compute job with priority, core, memory and burst requirements.",
+        content:
+          "Queue a real compute workload — data processing, ML training, video encoding, reporting or backup.",
       },
       { property: "og:title", content: "Submit Job | Smart Cloud Task Engine" },
       {
         property: "og:description",
-        content: "Submit a compute job with priority, core, memory and burst requirements.",
+        content:
+          "Queue a real compute workload — data processing, ML training, video encoding, reporting or backup.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -44,25 +53,24 @@ function SubmitPage() {
   const qc = useQueryClient();
   const navigate = useNavigate();
 
-  const [name, setName] = useState("image-processing");
-  const [type, setType] = useState("COMPUTE");
+  const [type, setType] = useState(SUBMITTABLE_TYPES[0]!.id);
+  const [name, setName] = useState("");
   const [priority, setPriority] = useState<JobPriority>("MEDIUM");
-  const [tenant, setTenant] = useState(tenantId || "tenant-a");
-  const [cores, setCores] = useState(2);
-  const [memory, setMemory] = useState(512);
-  const [burst, setBurst] = useState(3000);
+  const [size, setSize] = useState<WorkloadSize>("MEDIUM");
+
+  const workload = getWorkload(type);
+  const resources = resolveResources(type, size);
+  const jobName = name.trim() || workload.label.toLowerCase().replace(/\s+/g, "-");
 
   const submit = useMutation({
     mutationFn: () =>
       submitJob({
-        name,
+        name: jobName,
         type,
         priority,
-        tenantId: tenant,
+        tenantId: tenantId || "tenant-a",
         userId: user?.email ?? "operator",
-        requestedCores: cores,
-        requestedMemoryMb: memory,
-        estimatedMs: burst,
+        ...resources,
       }),
     onSuccess: (res) => {
       if (!res.accepted) {
@@ -78,107 +86,110 @@ function SubmitPage() {
 
   return (
     <AppLayout title="Submit Job">
-      <Card className="max-w-3xl">
-        <CardHeader>
-          <CardTitle className="text-base">New job request</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form
-            className="grid gap-4 sm:grid-cols-2"
-            onSubmit={(e) => {
-              e.preventDefault();
-              submit.mutate();
-            }}
-          >
-            <Field label="Job name">
-              <Input value={name} onChange={(e) => setName(e.target.value)} required />
-            </Field>
-            <Field label="Job type">
-              <Select value={type} onValueChange={setType}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {["COMPUTE", "IO", "BATCH", "ML_TRAINING", "REPORT"].map((t) => (
-                    <SelectItem key={t} value={t}>
-                      {t}
-                    </SelectItem>
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_280px]">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">New workload</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form
+              className="grid gap-4 sm:grid-cols-2"
+              onSubmit={(e) => {
+                e.preventDefault();
+                submit.mutate();
+              }}
+            >
+              <div className="space-y-1.5 sm:col-span-2">
+                <Label>Workload</Label>
+                <Select value={type} onValueChange={setType}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {SUBMITTABLE_TYPES.map((t) => (
+                      <SelectItem key={t.id} value={t.id}>
+                        {t.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">{workload.description}</p>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label>Job name</Label>
+                <Input
+                  value={name}
+                  placeholder={jobName}
+                  onChange={(e) => setName(e.target.value)}
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label>Priority</Label>
+                <Select value={priority} onValueChange={(v) => setPriority(v as JobPriority)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {["LOW", "MEDIUM", "HIGH", "CRITICAL"].map((p) => (
+                      <SelectItem key={p} value={p}>
+                        {p}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-1.5 sm:col-span-2">
+                <Label>Workload size</Label>
+                <div className="grid grid-cols-3 gap-2">
+                  {SIZES.map((s) => (
+                    <Button
+                      key={s.id}
+                      type="button"
+                      variant={size === s.id ? "default" : "outline"}
+                      onClick={() => setSize(s.id)}
+                    >
+                      {s.label}
+                    </Button>
                   ))}
-                </SelectContent>
-              </Select>
-            </Field>
-            <Field label="Priority">
-              <Select value={priority} onValueChange={(v) => setPriority(v as JobPriority)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {["LOW", "MEDIUM", "HIGH", "CRITICAL"].map((p) => (
-                    <SelectItem key={p} value={p}>
-                      {p}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </Field>
-            <Field label="Tenant">
-              <Select value={tenant} onValueChange={setTenant}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {TENANTS.map((t) => (
-                    <SelectItem key={t.id} value={t.id}>
-                      {t.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </Field>
-            <Field label="Requested cores">
-              <Input
-                type="number"
-                min={1}
-                max={64}
-                value={cores}
-                onChange={(e) => setCores(Number(e.target.value))}
-              />
-            </Field>
-            <Field label="Requested memory (MB)">
-              <Input
-                type="number"
-                min={64}
-                step={64}
-                value={memory}
-                onChange={(e) => setMemory(Number(e.target.value))}
-              />
-            </Field>
-            <Field label="Estimated burst (ms)">
-              <Input
-                type="number"
-                min={100}
-                step={100}
-                value={burst}
-                onChange={(e) => setBurst(Number(e.target.value))}
-              />
-            </Field>
-            <div className="flex items-end">
-              <Button type="submit" className="w-full" disabled={submit.isPending}>
-                {submit.isPending ? "Submitting…" : "Submit job"}
-              </Button>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
+                </div>
+              </div>
+
+              <div className="sm:col-span-2">
+                <Button type="submit" className="w-full" disabled={submit.isPending}>
+                  {submit.isPending ? "Submitting…" : "Submit job"}
+                </Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+
+        <Card className="h-fit">
+          <CardHeader>
+            <CardTitle className="text-base">Allocation preview</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3 text-sm">
+            <Row label="Cores" value={String(resources.requestedCores)} />
+            <Row label="Memory" value={`${resources.requestedMemoryMb} MB`} />
+            <Row label="Estimated runtime" value={`${(resources.estimatedMs / 1000).toFixed(1)} s`} />
+            <Row label="Tenant" value={tenantId || "tenant-a"} />
+            <p className="pt-2 text-xs text-muted-foreground">
+              Resources are derived from the workload type and size, then allocated by the engine.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
     </AppLayout>
   );
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Row({ label, value }: { label: string; value: string }) {
   return (
-    <div className="space-y-1.5">
-      <Label>{label}</Label>
-      {children}
+    <div className="flex items-center justify-between">
+      <span className="text-muted-foreground">{label}</span>
+      <span className="font-medium">{value}</span>
     </div>
   );
 }
