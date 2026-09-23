@@ -154,9 +154,20 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     [session],
   );
 
+  const effectiveUser = adminMode ? ADMIN_USER : user;
+
   const value = useMemo(
-    () => ({ user, session, tenantId, ready, signOut, setTenantId }),
-    [user, session, tenantId, ready, signOut, setTenantId],
+    () => ({
+      user: effectiveUser,
+      session: adminMode ? null : session,
+      tenantId,
+      ready,
+      isAdmin: adminMode,
+      signInAdmin,
+      signOut,
+      setTenantId,
+    }),
+    [effectiveUser, adminMode, session, tenantId, ready, signInAdmin, signOut, setTenantId],
   );
 
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;
