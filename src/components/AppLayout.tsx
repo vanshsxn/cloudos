@@ -37,6 +37,8 @@ const NAV = [
   { to: "/", label: "Dashboard", icon: LayoutGrid },
   { to: "/submit", label: "Submit Job", icon: PlusSquare },
   { to: "/jobs", label: "All Jobs", icon: ListTree },
+  { to: "/github", label: "GitHub", icon: Github },
+  { to: "/deployments", label: "Deployments", icon: Rocket },
   { to: "/scheduler", label: "Scheduler", icon: Clock },
   { to: "/resources", label: "Resources", icon: MonitorCog },
   { to: "/tenants", label: "Tenants", icon: Users },

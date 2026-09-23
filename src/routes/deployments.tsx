@@ -87,21 +87,22 @@ function DeploymentsPage() {
         <StatCard
           label="Active deployments"
           value={String(active.length)}
-          icon={Rocket}
-          hint={`${rows.length} tracked`}
+          icon={<Rocket className="h-5 w-5" />}
+          sub={`${rows.length} tracked`}
         />
         <StatCard
           label="Cores allocated"
           value={totalCores ? `${usedCores} / ${totalCores}` : String(usedCores)}
-          icon={Cpu}
-          hint="Across in-flight deployments"
+          icon={<Cpu className="h-5 w-5" />}
+          sub="Across in-flight deployments"
         />
         <StatCard
           label="Memory allocated"
           value={`${usedMemory} MB`}
-          icon={HardDrive}
-          hint={totalMemory ? `of ${totalMemory} MB` : "engine offline"}
+          icon={<HardDrive className="h-5 w-5" />}
+          sub={totalMemory ? `of ${totalMemory} MB` : "engine offline"}
         />
+
       </div>
 
       <Card className="mt-4">
