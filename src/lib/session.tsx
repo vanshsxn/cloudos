@@ -72,6 +72,14 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<SessionUser | null>(null);
   const [tenantId, setTenantIdState] = useState<string>("");
   const [ready, setReady] = useState(false);
+  const [adminMode, setAdminMode] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== "undefined" && window.localStorage.getItem(ADMIN_FLAG) === "1") {
+      setAdminMode(true);
+      setReady(true);
+    }
+  }, []);
 
   useEffect(() => {
     const { data: sub } = supabase.auth.onAuthStateChange((_event, next) => {
